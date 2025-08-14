@@ -89,15 +89,17 @@ def execute(instr_word):
         addr = cpu.regs[reg]
         try:
             with open(filename, "r") as f:
-                lines = f.readlines()
-                mem_index = 0
-                for line in lines:
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        continue
-                    word = eval(line)
-                    memory[addr + mem_index*4 : addr + mem_index*4+4] = word.to_bytes(4, "little")
-                    mem_index +=1
+                lines = [line.strip() for line in f if line.strip()]
+                for mem_index, line in enumerate(lines):
+                    word = eval(line, {
+    "instr": instr,
+    "OP_MOV": OP_MOV,
+    "OP_OUT": OP_OUT,
+    "OP_HALT": OP_HALT,
+    "MMIO_CONSOLE": MMIO_CONSOLE
+})
+
+                    memory[addr + mem_index*4 : addr + mem_index*4 + 4] = word.to_bytes(4, "little")
         except FileNotFoundError:
                 print(f"NF")
                 cpu.running = False
