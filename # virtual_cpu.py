@@ -50,10 +50,10 @@ def instr(op, reg=0, imm=0):
     return (op << 24) | (reg << 16) | (imm & 0xFFFF)
 
 #define functions
-def mmio_write(addr, value):
-    global cursor_x, cursor_y
+def mmio_write(addr, value, line_reg=None):
+    global cursor_x, cursor_y  # <--- this is required
     if addr == MMIO_CONSOLE:
-        reg = cursor_y
+        reg = line_reg if line_reg is not None else cursor_y
         line_buffers[reg].append(chr(value))
         cursor_x += 1
         if cursor_x >= SCREEN_WIDTH:
@@ -61,8 +61,7 @@ def mmio_write(addr, value):
             cursor_y += 1
             if cursor_y >= 30:
                 cursor_y = 5
-        elif 0 <= addr < len(memory):
-            memory[addr] = value
+
             
 def fetch():
     instr_word = int.from_bytes(memory[cpu.pc:cpu.pc+4], "little")
@@ -77,7 +76,7 @@ def execute(instr_word):
     if op == OP_MOV:
         cpu.regs[reg] = imm
     elif op == OP_OUT:
-        mmio_write(cpu.regs[reg], imm & 0xFF)
+        mmio_write(MMIO_CONSOLE, imm & 0xFF, reg + 5)
     elif op == OP_HALT:
         cpu.running = False
     elif op == OP_LOAD:
